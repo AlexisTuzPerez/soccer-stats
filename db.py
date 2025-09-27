@@ -24,7 +24,7 @@ def connect_db():
 
 
 def crear_tablas():
-    # Importar todos los modelos para asegurar dependencias
+
     from models.base import Base
     import models.usuario
     import models.competiciones_favoritas

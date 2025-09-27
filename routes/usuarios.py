@@ -6,6 +6,7 @@ import os
 from sqlalchemy.orm import sessionmaker
 from db import connect_db
 from models.usuario import Usuario, Base
+from werkzeug.security import generate_password_hash, check_password_hash
 
 usuarios_bp = Blueprint('usuarios', __name__)
 
@@ -23,7 +24,8 @@ def registro():
     session = Session()
     if session.query(Usuario).filter_by(correo=correo).first():
         return jsonify({'error': 'El correo ya está registrado'}), 400
-    usuario = Usuario(nombre=nombre, correo=correo, contrasena=contrasena)
+    contrasena_hash = generate_password_hash(contrasena)
+    usuario = Usuario(nombre=nombre, correo=correo, contrasena=contrasena_hash)
     session.add(usuario)
     session.commit()
 
@@ -48,8 +50,8 @@ def login():
     correo = data.get('correo')
     contrasena = data.get('contrasena')
     session = Session()
-    usuario = session.query(Usuario).filter_by(correo=correo, contrasena=contrasena).first()
-    if usuario:
+    usuario = session.query(Usuario).filter_by(correo=correo).first()
+    if usuario and check_password_hash(usuario.contrasena, contrasena):
         token = jwt.encode({
             'id': usuario.id,
             'exp': (datetime.datetime.utcnow() + datetime.timedelta(hours=2)).timestamp()

@@ -7,4 +7,4 @@ class Usuario(Base):
 	id = Column(Integer, primary_key=True, autoincrement=True)
 	nombre = Column(String(100), nullable=False)
 	correo = Column(String(120), unique=True, nullable=False)
-	contrasena = Column(String(128), nullable=False)
+	contrasena = Column(String(512), nullable=False)
