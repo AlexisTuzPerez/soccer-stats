@@ -9,9 +9,8 @@ requests = "*"
 dotenv = "*"
 sqlalchemy = "*"
 pg8000 = "*"
-jwt = "*"
-pyjwt = "*"
 flask-jwt-extended = "*"
+gunicorn = "*"
 
 [dev-packages]
 
