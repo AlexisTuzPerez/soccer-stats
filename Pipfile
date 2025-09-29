@@ -6,11 +6,12 @@ name = "pypi"
 [packages]
 flask = "*"
 requests = "*"
-dotenv = "*"
+python-dotenv = "*"
 sqlalchemy = "*"
 pg8000 = "*"
 flask-jwt-extended = "*"
-gunicorn = "*"
+gunicorn = {version = "*", sys_platform = "!='win32'"}
+waitress = {version = "*", sys_platform = "=='win32'"}
 
 [dev-packages]
 
