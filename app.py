@@ -36,14 +36,4 @@ def home():
 
 
 
-
-if __name__ == '__main__':
-    from db import connect_db, crear_tablas
-    connect_db()
-    crear_tablas()  
-    app.run(debug=True)
-
-
-
-
 # pipenv run python app.py
