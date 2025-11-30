@@ -1,0 +1,166 @@
+Guía API para conectar el Frontend
+Proyecto: soccer-stats
+Fecha: 29-11-2025
+
+1) Resumen
+- Objetivo: Documentar los endpoints reales del proyecto según los archivos en `routes/`.
+- Prefijo base: (rutas definidas sin prefijo global en `routes/` — usar la base del servidor, por ejemplo `http://localhost:5000`).
+- Stack: Flask + JWT (decorador `utils/jwt_required.py`). Las rutas usan modelos y DB via `db.py` y `models/`.
+
+2) Módulos `routes/` actuales (a partir del código)
+- `routes/competiciones.py`  -> rutas relacionadas con competiciones (lista, detalle, posiciones, partidos, equipos, goleadores)
+- `routes/equipos.py`        -> listar equipos, detalle, partidos de equipo
+- `routes/personas.py`      -> detalle persona (jugador) y partidos del jugador
+- `routes/competiciones_favoritas.py` -> CRUD favorito competiciones (POST/GET/DELETE)
+- `routes/equipos_favoritos.py`       -> CRUD favorito equipos (POST/GET/DELETE)
+- `routes/favoritos_personas.py`     -> CRUD favorito personas (POST/GET/DELETE)
+- `routes/usuarios.py`      -> registro, login, obtener datos del usuario y logout
+
+3) Contratos y rutas (resumen)
+
+Auth (rutas reales en `routes/usuarios.py`)
+- POST `/usuarios/registrar`
+  - Auth: no
+  - Body (JSON): `{ "nombre": "...", "correo": "...", "contrasena": "..." }`
+  - Response: `201` JSON con `{ "id": ..., "nombre": ..., "correo": ..., "token": "..." }`
+  - Nota: la respuesta también setea cookie `soccer-stats-token` (httponly).
+
+- POST `/usuarios/login`
+  - Auth: no
+  - Body (JSON): `{ "correo": "...", "contrasena": "..." }`
+  - Response: `200` JSON con `{ "id": ..., "nombre": ..., "correo": ..., "token": "..." }` y cookie `soccer-stats-token`.
+
+- GET `/usuarios` (obtener datos del usuario autenticado)
+  - Auth: sí (decorador `@jwt_required` que inyecta `usuario_id`)
+  - Response: `200` JSON `{ "id": ..., "nombre": ..., "correo": ... }`
+
+- POST `/usuarios/logout`
+  - Auth: no (simplemente borra la cookie)
+  - Response: `200` JSON `{ "message": "Logout exitoso" }` and clears cookie.
+
+Competiciones (rutas en `routes/competiciones.py`)
+- GET `/competiciones`  (protegida con `@jwt_required`)
+  - Llama a `api.competiciones.get_competiciones()` y devuelve el listado.
+
+- GET `/competiciones/<int:competition_id>`  (protegida)
+  - Llama a `api.competiciones.get_competiciones_by_id(competition_id)`.
+
+- GET `/competiciones/<int:competition_id>/posiciones`  (protegida)
+  - Llama a `api.competiciones.get_tabla_competicion(competition_id)`.
+
+- GET `/competiciones/<int:competition_id>/partidos`  (protegida)
+  - Llama a `api.competiciones.get_partidos(competition_id)`.
+
+- GET `/competiciones/<int:competition_id>/teams`  (protegida)
+  - Llama a `api.competiciones.get_competiciones_equipos(competition_id)`.
+
+- GET `/competiciones/<int:competition_id>/goleadores`  (protegida)
+  - Llama a `api.competiciones.get_goleadores(competition_id)`.
+
+Equipos (rutas en `routes/equipos.py`)
+- GET `/equipos`  (protegida)
+  - Llama a `api.equipos.listar_equipos()`.
+
+- GET `/equipos/<int:equipo_id>`  (protegida)
+  - Llama a `api.equipos.obtener_equipo(equipo_id)`.
+
+- GET `/equipos/<int:equipo_id>/partidos`  (protegida)
+  - Llama a `api.equipos.obtener_partidos_equipo(equipo_id)`.
+
+Personas / Jugadores (rutas en `routes/personas.py`)
+- GET `/personas/<int:jugador_id>`  (protegida)
+  - Llama a `api.personas.obtener_persona(jugador_id)`.
+
+- GET `/personas/<int:jugador_id>/partidos`  (protegida)
+  - Llama a `api.personas.obtener_partidos_persona(jugador_id)`.
+
+Competiciones Favoritas (rutas en `routes/competiciones_favoritas.py`)
+- POST `/competiciones-favoritas`  (protegida)
+  - Body: `{ "competicion_id": <int> }`
+  - Respuestas: `201` `{ "competicion_id": <int> }` o `400` si ya existe o falta campo.
+
+- GET `/competiciones-favoritas`  (protegida)
+  - Devuelve `{ "favoritas": [<id>, ...] }` del usuario autenticado.
+
+- DELETE `/competiciones-favoritas/<int:competition_id>`  (protegida)
+  - Elimina la favoritada para el usuario; resp `200` con mensaje o `404` si no existe.
+
+Equipos Favoritos (rutas en `routes/equipos_favoritos.py`)
+- POST `/equipos-favoritos`  (protegida)
+  - Body: `{ "equipo_id": <int> }` -> `201` `{ "equipo_id": <int> }`.
+
+- GET `/equipos-favoritos`  (protegida)
+  - Devuelve `{ "favoritos": [<id>, ...] }`.
+
+- DELETE `/equipos-favoritos/<int:equipo_id>`  (protegida)
+  - Elimina favorito; `200` con mensaje o `404`.
+
+Favoritos Personas (rutas en `routes/favoritos_personas.py`)
+- POST `/favoritos-personas`  (protegida)
+  - Body: `{ "jugador_id": <int> }` -> `201` `{ "jugador_id": <int> }`.
+
+- GET `/favoritos-personas`  (protegida)
+  - Devuelve `{ "favoritos": [<id>, ...] }`.
+
+- DELETE `/favoritos-personas/<int:jugador_id>`  (protegida)
+  - Elimina favorito; `200` con mensaje o `404`.
+
+4) Formato de respuestas observadas en el código
+- Favoritos endpoints devuelven objetos simples (ej. `{ "favoritas": [..] }`, `{ "equipo_id": .. }`).
+- Usuarios devuelve JSON con `token` y además setea cookie `soccer-stats-token`.
+- Errores devuelven JSON `{ "error": "mensaje" }` y códigos apropiados (`400`, `401`, `404`).
+
+Recomendación: mantener respuestas consistentes si quieres una capa uniforme para el front.
+
+5) Autenticación — comportamiento actual
+- El proyecto usa un token JWT generado en `routes/usuarios.py` y devuelve el `token` en el body
+  y lo guarda en cookie `soccer-stats-token` (httponly). El token incluye `id` y `exp`.
+- Las rutas protegidas usan `@jwt_required` que inyecta `usuario_id` como primer argumento
+  en las funciones (ver `routes/*`), por lo que el front puede enviar el token en cookie o
+  en header `Authorization: Bearer <token>` según cómo implemente `jwt_required`.
+
+6) Notas rápidas para el Frontend (cómo consumir la API existente)
+- Registro:
+  POST `/usuarios/registrar` con JSON `{ "nombre": "X", "correo": "x@x.com", "contrasena": ".." }`.
+  - Recibirás un `token` en el JSON y una cookie `soccer-stats-token`.
+
+- Login:
+  POST `/usuarios/login` con `{ "correo": "..", "contrasena": ".." }`.
+  - Recibirás `token` + cookie.
+
+- Consumir rutas protegidas:
+  - Opción A (cookie): el navegador enviará automáticamente `soccer-stats-token` si el front y back
+    están en el mismo dominio/puerto o si configuras CORS y `withCredentials: true`.
+  - Opción B (header): extraer el `token` del body de login/registro y enviar header
+    `Authorization: Bearer <token>` en llamadas fetch/axios.
+
+- Ejemplo fetch para listar competiciones (usando header):
+  fetch('/competiciones', { headers: { 'Authorization': 'Bearer ' + token } })
+
+- Ejemplo fetch para crear favorito de competición:
+  fetch('/competiciones-favoritas', { method: 'POST', headers: { 'Content-Type':'application/json', 'Authorization': 'Bearer '+token }, body: JSON.stringify({ competicion_id: 123 }) })
+
+7) Ejemplos `curl` (ajustados a rutas reales)
+- Registrar:
+  curl -X POST http://localhost:5000/usuarios/registrar -H "Content-Type: application/json" -d '{"nombre":"Ana","correo":"ana@ex.com","contrasena":"1234"}'
+
+- Login:
+  curl -X POST http://localhost:5000/usuarios/login -H "Content-Type: application/json" -d '{"correo":"ana@ex.com","contrasena":"1234"}'
+
+- Listar competiciones (con token en header):
+  curl http://localhost:5000/competiciones -H "Authorization: Bearer <TOKEN>"
+
+- Agregar competicion favorita:
+  curl -X POST http://localhost:5000/competiciones-favoritas -H "Authorization: Bearer <TOKEN>" -H "Content-Type: application/json" -d '{"competicion_id": 10}'
+
+8) Validaciones y seguridad (recomendaciones)
+- Mantener consistencia en las respuestas (ej. envolver en `{ ok: true, data: ... }`).
+- Considerar usar `withCredentials: true` y CORS configurado si el front está en otro origen.
+- Asegurar que `jwt_required` acepte token desde header y/o cookie según cómo quieras trabajar.
+
+9) Siguientes pasos sugeridos
+1) ¿Quieres que actualice las rutas para añadir un prefijo `/api`? Puedo hacerlo modificando `routes/` y `app.py`.
+2) Puedo generar un cliente JS mínimo (fetch/axios) con ejemplos listos para el frontend.
+3) Puedo crear los archivos esqueleto `api/` si prefieres mover lógica de `api.*` a esa carpeta.
+
+Si quieres, actualizo `api_guide.txt` para incluir el mapeo exacto de blueprints que usas en `app.py` (si me muestras `app.py`).
