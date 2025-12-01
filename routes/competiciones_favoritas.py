@@ -1,14 +1,15 @@
-
 from flask import Blueprint, request, jsonify
 from utils.jwt_required import jwt_required
 from sqlalchemy.orm import sessionmaker
 from db import connect_db
 from models.competiciones_favoritas import CompeticionFavorita, Base
-
+import jwt
+import os
 
 competiciones_favoritas_bp = Blueprint('competiciones_favoritas', __name__)
 engine = connect_db()
 Session = sessionmaker(bind=engine)
+SECRET_KEY = os.getenv('JWT_SECRET', 'supersecretkey')
 
 
 

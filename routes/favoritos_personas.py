@@ -3,10 +3,13 @@ from utils.jwt_required import jwt_required
 from sqlalchemy.orm import sessionmaker
 from db import connect_db
 from models.jugadores_favoritos import JugadorFavorito, Base
+import jwt
+import os
 
 favoritos_personas_bp = Blueprint('favoritos_personas', __name__)
 engine = connect_db()
 Session = sessionmaker(bind=engine)
+SECRET_KEY = os.getenv('JWT_SECRET', 'supersecretkey')
 
 @favoritos_personas_bp.route('/favoritos-personas', methods=['POST'])
 @jwt_required

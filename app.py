@@ -1,6 +1,6 @@
 from flask import Flask
 from flask_jwt_extended import JWTManager
-
+import os
 
 
 from routes.competiciones import competiciones_bp
@@ -19,6 +19,7 @@ load_dotenv()
 
 
 app = Flask(__name__)
+app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'your-secret-string-here-change-in-production')
 jwt = JWTManager(app)
 app.register_blueprint(competiciones_bp)
 app.register_blueprint(equipos_bp)
@@ -34,6 +35,8 @@ def home():
     return 'Hello, Soccer Stats!'
 
 
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', port=8000)
 
 
 # pipenv run python app.py
